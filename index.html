@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>幼兒園基礎評鑑佐證資料卷宗</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;600;700;900&family=Noto+Sans+TC:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FAFAF7;
+    --paper-2:#F3EFE4;
+    --ink:#1E2A33;
+    --ink-soft:#5B6B74;
+    --navy:#24424B;
+    --navy-2:#1A343C;
+    --navy-light:#3A6570;
+    --gold:#B8873A;
+    --gold-light:#E4C68B;
+    --sage:#5E8267;
+    --sage-light:#DCE7DD;
+    --line:#E1DDD1;
+    --card:#FFFFFF;
+    --alert:#B5533C;
+    --alert-light:#F3DFD8;
+    --radius:10px;
+    --shadow:0 1px 2px rgba(30,42,51,.06), 0 4px 16px rgba(30,42,51,.05);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Noto Sans TC',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  ::selection{background:var(--gold-light);}
+  a{color:inherit;}
+  button{font-family:inherit;}
+  :focus-visible{outline:3px solid var(--gold); outline-offset:2px;}
+
+  .code{font-family:'IBM Plex Mono',monospace;}
+
+  /* ---------- Layout shell ---------- */
+  #app{display:flex; min-height:100vh;}
+
+  /* Sidebar */
+  #sidebar{
+    width:236px; flex:none;
+    background:var(--navy);
+    color:#EAF1EE;
+    padding:22px 14px 20px;
+    position:sticky; top:0; height:100vh; overflow-y:auto;
+  }
+  .brand{
+    font-family:'Noto Serif TC',serif;
+    font-weight:900; font-size:17px; line-height:1.5;
+    letter-spacing:.02em;
+    padding:0 8px 16px;
+    border-bottom:1px solid rgba(234,241,238,.16);
+    margin-bottom:14px;
+  }
+  .brand small{
+    display:block; font-family:'IBM Plex Mono',monospace; font-weight:500;
+    font-size:10.5px; letter-spacing:.12em; color:var(--gold-light); margin-top:5px;
+    text-transform:uppercase;
+  }
+  nav.catnav{display:flex; flex-direction:column; gap:3px;}
+  .catnav button{
+    all:unset; cursor:pointer;
+    display:flex; align-items:center; gap:10px;
+    padding:10px 10px; border-radius:8px;
+    font-size:13.5px; color:#CFE0DA;
+    transition:background .15s ease, color .15s ease;
+  }
+  .catnav button:hover{background:rgba(234,241,238,.08); color:#fff;}
+  .catnav button.active{background:rgba(234,241,238,.14); color:#fff; font-weight:700;}
+  .catnav .num{
+    font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600;
+    width:22px; height:22px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(234,241,238,.12); flex:none;
+  }
+  .catnav button.active .num{background:var(--gold); color:var(--navy-2);}
+  .catnav .progress-mini{
+    margin-left:auto; font-family:'IBM Plex Mono',monospace; font-size:10px; color:#9EB6AF;
+  }
+  .catnav button.active .progress-mini{color:var(--gold-light);}
+  .sidebar-foot{
+    margin-top:18px; padding-top:14px; border-top:1px solid rgba(234,241,238,.16);
+    font-size:11px; color:#93A9A3; line-height:1.7;
+  }
+
+  /* Main column */
+  #main{flex:1; min-width:0; display:flex; flex-direction:column;}
+
+  header#topbar{
+    position:sticky; top:0; z-index:20;
+    background:rgba(250,250,247,.92); backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--line);
+    padding:14px 28px;
+    display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+  }
+  #topbar h1{
+    font-family:'Noto Serif TC',serif; font-size:16px; font-weight:700; margin:0;
+    color:var(--navy); flex:1; min-width:180px;
+  }
+  #topbar .subtitle{
+    font-size:11.5px; color:var(--ink-soft); font-weight:400; display:block; margin-top:2px;
+  }
+  .toolbar{display:flex; align-items:center; gap:10px;}
+
+  .toggle{
+    display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none;
+    font-size:12.5px; font-weight:700; color:var(--navy);
+    background:var(--card); border:1px solid var(--line); border-radius:999px;
+    padding:6px 12px 6px 6px;
+  }
+  .switch{
+    width:34px; height:19px; border-radius:999px; background:#D8D3C4; position:relative;
+    transition:background .15s ease; flex:none;
+  }
+  .switch::after{
+    content:""; position:absolute; top:2px; left:2px; width:15px; height:15px; border-radius:50%;
+    background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.25); transition:transform .15s ease;
+  }
+  .toggle.on .switch{background:var(--sage);}
+  .toggle.on .switch::after{transform:translateX(15px);}
+
+  .btn{
+    all:unset; cursor:pointer; font-size:12.5px; font-weight:700;
+    padding:8px 14px; border-radius:999px; display:inline-flex; align-items:center; gap:6px;
+    transition:filter .15s ease, transform .1s ease;
+  }
+  .btn:active{transform:scale(.97);}
+  .btn-gold{background:var(--gold); color:#3A2A0E;}
+  .btn-gold:hover{filter:brightness(1.06);}
+  .btn-ghost{background:var(--card); border:1px solid var(--line); color:var(--navy);}
+  .btn-ghost:hover{background:var(--paper-2);}
+  .btn-navy{background:var(--navy); color:#fff;}
+  .btn-navy:hover{filter:brightness(1.12);}
+  .btn-danger{background:var(--alert-light); color:var(--alert);}
+  .btn-danger:hover{filter:brightness(.97);}
+  .btn-sm{padding:5px 11px; font-size:11.5px;}
+
+  main#content{padding:26px 30px 80px; max-width:980px; width:100%; margin:0 auto;}
+
+  /* Overview */
+  .overview-hero{
+    background:linear-gradient(135deg, var(--navy) 0%, var(--navy-2) 100%);
+    color:#EAF1EE; border-radius:16px; padding:30px 28px; margin-bottom:22px;
+    position:relative; overflow:hidden;
+  }
+  .overview-hero::after{
+    content:"評 鑑"; position:absolute; right:18px; top:50%; transform:translateY(-50%) rotate(-8deg);
+    font-family:'Noto Serif TC',serif; font-weight:900; font-size:88px; color:rgba(234,241,238,.06);
+    letter-spacing:.1em; pointer-events:none;
+  }
+  .overview-hero h2{
+    font-family:'Noto Serif TC',serif; font-size:23px; margin:0 0 8px; font-weight:700;
+  }
+  .overview-hero p{margin:0; font-size:13px; color:#B9CCC5; max-width:520px; line-height:1.7;}
+  .overview-stats{display:flex; gap:26px; margin-top:20px; flex-wrap:wrap;}
+  .stat .n{font-family:'IBM Plex Mono',monospace; font-size:26px; font-weight:600; color:var(--gold-light);}
+  .stat .l{font-size:11px; color:#9EB6AF; margin-top:2px;}
+
+  .cat-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px;}
+  .cat-card{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    padding:16px 16px 14px; cursor:pointer; transition:box-shadow .15s ease, transform .1s ease;
+    box-shadow:var(--shadow);
+  }
+  .cat-card:hover{transform:translateY(-2px); box-shadow:0 6px 20px rgba(30,42,51,.1);}
+  .cat-card .top{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;}
+  .cat-card .num{
+    font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:12px; color:var(--navy);
+    background:var(--paper-2); border-radius:6px; padding:3px 8px;
+  }
+  .cat-card .title{font-weight:700; font-size:14.5px; color:var(--ink); margin-bottom:10px;}
+  .barwrap{height:6px; border-radius:4px; background:var(--paper-2); overflow:hidden;}
+  .barfill{height:100%; background:var(--sage); border-radius:4px; transition:width .3s ease;}
+  .cat-card .frac{font-size:11px; color:var(--ink-soft); margin-top:6px; font-family:'IBM Plex Mono',monospace;}
+
+  /* Category header */
+  .cat-header{margin-bottom:20px;}
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.14em; color:var(--gold);
+    text-transform:uppercase; font-weight:600; margin-bottom:4px;
+  }
+  .cat-header h2{
+    font-family:'Noto Serif TC',serif; font-size:24px; margin:0; color:var(--navy); font-weight:700;
+  }
+
+  /* Item group */
+  .item-group{margin-bottom:30px;}
+  .item-head{
+    display:flex; align-items:baseline; gap:10px; margin-bottom:12px;
+    padding-bottom:8px; border-bottom:2px solid var(--navy);
+  }
+  .item-head .code{font-size:13px; color:var(--gold); font-weight:600;}
+  .item-head h3{font-size:15.5px; margin:0; font-weight:700; color:var(--navy);}
+
+  /* Sub-item card */
+  .subitem{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); margin-bottom:14px; overflow:hidden;
+  }
+  .subitem-head{
+    display:flex; gap:12px; padding:16px 18px 14px; align-items:flex-start;
+  }
+  .seal{
+    flex:none; width:34px; height:34px; border-radius:50%;
+    border:2px solid var(--line); display:flex; align-items:center; justify-content:center;
+    font-family:'Noto Serif TC',serif; font-weight:900; font-size:13px; color:var(--ink-soft);
+    transition:all .2s ease; margin-top:2px;
+  }
+  .seal.done{
+    border-color:var(--gold); background:radial-gradient(circle at 35% 30%, var(--gold-light), var(--gold));
+    color:#3A2A0E; box-shadow:0 0 0 3px rgba(184,135,58,.15);
+  }
+  .subitem-body{flex:1; min-width:0;}
+  .subitem-body .code{font-size:12px; color:var(--gold); font-weight:700; display:block; margin-bottom:3px;}
+  .subitem-body .desc{font-size:14px; line-height:1.75; color:var(--ink);}
+  .criteria-toggle{
+    all:unset; cursor:pointer; font-size:11.5px; color:var(--navy-light); font-weight:700;
+    margin-top:8px; display:inline-flex; align-items:center; gap:4px;
+  }
+  .criteria-toggle:hover{color:var(--navy);}
+  .criteria-box{
+    display:none; margin-top:10px; padding:12px 14px; background:var(--paper-2);
+    border-radius:8px; font-size:12.5px; line-height:1.8; color:var(--ink-soft); white-space:pre-line;
+  }
+  .criteria-box.open{display:block;}
+
+  /* Evidence section */
+  .evidence{border-top:1px solid var(--line); background:var(--paper); padding:14px 18px 16px;}
+  .year-row{display:flex; align-items:center; gap:7px; flex-wrap:wrap; margin-bottom:12px;}
+  .year-chip{
+    all:unset; cursor:pointer; font-size:12px; font-weight:700; padding:5px 12px;
+    border-radius:999px; background:var(--card); border:1px solid var(--line); color:var(--ink-soft);
+  }
+  .year-chip.active{background:var(--navy); color:#fff; border-color:var(--navy);}
+  .year-chip .dot{
+    display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--sage);
+    margin-left:5px; vertical-align:middle;
+  }
+  .year-add{
+    all:unset; cursor:pointer; font-size:12px; font-weight:700; padding:5px 11px;
+    border-radius:999px; border:1px dashed var(--gold); color:var(--gold);
+  }
+  .year-add:hover{background:var(--gold-light); }
+  .year-empty{font-size:12.5px; color:var(--ink-soft); font-style:italic; padding:6px 2px;}
+
+  .year-panel{display:none;}
+  .year-panel.active{display:block;}
+
+  .files-grid{display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px;}
+  .file-thumb{
+    position:relative; width:92px; height:92px; border-radius:8px; overflow:hidden;
+    border:1px solid var(--line); background:var(--card);
+  }
+  .file-thumb img{width:100%; height:100%; object-fit:cover; cursor:zoom-in; display:block;}
+  .file-thumb .filecard{
+    width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:4px; padding:6px; text-align:center; cursor:pointer; text-decoration:none; color:var(--navy);
+  }
+  .file-thumb .filecard .ext{
+    font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:700; color:#fff;
+    background:var(--navy-light); border-radius:4px; padding:2px 6px;
+  }
+  .file-thumb .filecard .fname{font-size:9.5px; line-height:1.3; word-break:break-all; color:var(--ink-soft);}
+  .file-thumb .rm{
+    position:absolute; top:3px; right:3px; width:19px; height:19px; border-radius:50%;
+    background:rgba(30,42,51,.72); color:#fff; border:none; cursor:pointer; font-size:11px;
+    display:flex; align-items:center; justify-content:center; line-height:1;
+  }
+  .file-thumb .rm:hover{background:var(--alert);}
+
+  .upload-zone{
+    display:inline-flex; align-items:center; gap:7px; cursor:pointer;
+    font-size:12px; font-weight:700; color:var(--navy); padding:8px 14px;
+    border:1.5px dashed var(--navy-light); border-radius:8px; background:rgba(58,101,112,.05);
+  }
+  .upload-zone:hover{background:rgba(58,101,112,.1);}
+  .upload-zone input{display:none;}
+
+  .notes-label{font-size:11.5px; font-weight:700; color:var(--ink-soft); margin:12px 0 5px;}
+  textarea.notes{
+    width:100%; min-height:64px; resize:vertical; border:1px solid var(--line); border-radius:8px;
+    padding:9px 11px; font-family:inherit; font-size:13px; color:var(--ink); background:var(--card);
+  }
+  textarea.notes:disabled{background:transparent; border-color:transparent; padding-left:0; color:var(--ink);}
+  .notes-view{font-size:13px; color:var(--ink); line-height:1.7; white-space:pre-wrap; padding:2px 0;}
+
+  .yr-actions{display:flex; justify-content:flex-end; margin-top:6px;}
+
+  .empty-view{font-size:12.5px; color:var(--ink-soft); font-style:italic;}
+
+  /* Lightbox */
+  #lightbox{
+    position:fixed; inset:0; background:rgba(20,26,30,.9); display:none;
+    align-items:center; justify-content:center; z-index:100; padding:30px;
+  }
+  #lightbox.open{display:flex;}
+  #lightbox img{max-width:92vw; max-height:88vh; border-radius:6px; box-shadow:0 10px 40px rgba(0,0,0,.5);}
+  #lightbox .close{
+    position:absolute; top:20px; right:26px; background:none; border:none; color:#fff;
+    font-size:30px; cursor:pointer; line-height:1;
+  }
+
+  footer.sitefoot{
+    text-align:center; font-size:11.5px; color:var(--ink-soft); padding:26px 20px 40px;
+  }
+
+  @media (max-width:860px){
+    #sidebar{
+      position:fixed; left:0; right:0; top:0; height:auto; width:100%; z-index:30;
+      padding:10px 10px; display:flex; align-items:center; overflow-x:auto;
+    }
+    .brand{display:none;}
+    nav.catnav{flex-direction:row; gap:6px;}
+    .catnav button{white-space:nowrap;}
+    .sidebar-foot{display:none;}
+    #app{flex-direction:column;}
+    header#topbar{top:0; margin-top:52px;}
+    main#content{padding:18px 14px 60px;}
+    .overview-hero::after{display:none;}
+  }
+</style>
+</head>
+<body>
+
+<script id="data-store" type="application/json">{}</script>
+
+<div id="app">
+  <aside id="sidebar">
+    <div class="brand">幼兒園基礎評鑑<br>佐證資料卷宗
+      <small>112–116 學年度指標</small>
+    </div>
+    <nav class="catnav" id="catnav"></nav>
+    <div class="sidebar-foot">依臺北市政府教育局<br>112年4月28日修正指標建置</div>
+  </aside>
+
+  <div id="main">
+    <header id="topbar">
+      <h1>幼兒園基礎評鑑佐證資料
+        <span class="subtitle" id="topbarSub">總覽</span>
+      </h1>
+      <div class="toolbar">
+        <div class="toggle" id="editToggle"><span class="switch"></span>編輯模式</div>
+        <button class="btn btn-gold" id="exportBtn">⬇ 匯出網站檔案</button>
+      </div>
+    </header>
+    <main id="content"></main>
+    <footer class="sitefoot">本網站僅供內部整理評鑑佐證資料使用，匯出之 HTML 檔案可直接部署於任何靜態網頁空間。</footer>
+  </div>
+</div>
+
+<div id="lightbox"><button class="close" id="lbClose">&times;</button><img id="lbImg" src="" alt=""></div>
+
+<script>
+/* ============================================================
+   1. 指標定義（固定內容，來源：112-116學年度幼兒園基礎評鑑指標）
+============================================================ */
+const CATEGORIES = [
+  {id:"c1", num:"1", title:"設立與營運", items:[
+    {code:"1.1", title:"設立名稱及地址", subs:[
+      {code:"1.1.1", desc:"招牌、對外銜稱及使用地址與樓層應與設立許可證書所載相符。",
+       method:"1. 查閱設立許可證書所載名稱及使用地址與樓層。\n2. 實地觀察幼兒園招牌、幼童專用車、園方網頁名稱及使用地址與樓層。\n3. 未設置網頁者，網頁免檢核；未提供幼童專用車服務者，幼童專用車免檢核。"}
+    ]},
+    {code:"1.2", title:"生師比例", subs:[
+      {code:"1.2.1", desc:"生師比例應符合幼兒教育及照顧法之規定。",
+       method:"1. 查閱全國幼兒園幼生管理系統之幼兒園班級人數統計表。\n2. 查閱全國教保資訊網填報系統之教職員清冊。\n3. 實地觀察。\n4. 幼兒園得提供備查公文為佐證資料。"}
+    ]},
+    {code:"1.3", title:"資訊公開", subs:[
+      {code:"1.3.1", desc:"設立許可證書應懸掛於園內足資辨識之處所。", method:"實地觀察。"},
+      {code:"1.3.2", desc:"教保服務人員之學歷證書或資格證書應懸掛於園內足資辨識之處所。",
+       method:"實地觀察：\n1. 園長應公開幼兒園園長專業訓練及格證書或幼兒教育及照顧法施行前之托育機構主管人員專業訓練及格證書；如所適用之法令及資格規定，無規範應具備幼兒園園長或托育機構主管人員專業訓練證書者，應公開學歷證書。\n2. 教師應公開教師證書。\n3. 教保員、助理教保員應公開學歷證書。\n4. 代理期間連續達三個月以上之教保服務人員代理人員應公開備查公文。\n5. 前開證書內個人隱私資料得採部分遮蔽方式呈現。"}
+    ]}
+  ]},
+  {id:"c2", num:"2", title:"總務與財務管理", items:[
+    {code:"2.1", title:"收費規定", subs:[
+      {code:"2.1.1", desc:"收退費基準及減免收費規定應於每學期開始前一個月公告，並告知家長。",
+       method:"1. 查閱評鑑當學年之公告紀錄，如書面公告、園方網頁資料等。\n2. 抽查評鑑當學年之通知紀錄，如親子聯絡簿、家長通知單或其他電子通知紀錄等。\n3. 每學期開始前一個月之日期計算，依幼兒教育及照顧法施行細則所訂日期為準，依學校型態實驗教育實施條例與公立國民小學及國民中學委託私人辦理條例辦理實驗教育之學校，其附設幼兒園得從其規定。"},
+      {code:"2.1.2", desc:"各項收費應列有明細，並開立收據，且未逾報送直轄市、縣(市)主管機關之數額。",
+       method:"1. 抽查評鑑當學年及前一學年之收費存根。\n2. 如係由代收機構代收費用，收費存根得以列有各項收費明細之繳費單據及銀行開立之繳費情況清冊替代。\n3. 112學年幼兒園之收費項目及用途須符合直轄市、縣(市)主管機關之規定；自113學年起，前開項目及用途須符合中央主管機關之規定。\n4. 公立幼兒園之收費項目及數額不得逾直轄市、縣(市)主管機關所定收費基準。\n5. 私立幼兒園之收費項目及數額不得逾報送直轄市、縣(市)主管機關備查之內容。"}
+    ]},
+    {code:"2.2", title:"環境設備維護", subs:[
+      {code:"2.2.1", desc:"每學期應至少實施一次全園環境消毒，並留有紀錄。",
+       method:"1. 查閱評鑑當學年及前一學年之行事曆及消毒紀錄。\n2. 前項消毒紀錄應包含消毒日期及照片。"},
+      {code:"2.2.2", desc:"每學期應至少自我檢核一次全園室內、外設施設備之安全性；對於不符安全，待修繕或汰換者，應留有處理情形之紀錄；設有固定式遊戲設施者，每月應定期進行遊戲場及設施檢查工作。",
+       method:"1. 全園室內、外設施設備檢核項目得由各園自行訂定；固定式遊戲設施依衛生福利部所定「兒童遊戲設施自主檢查表」之項目檢核。\n2. 檢視評鑑當學年及前一學年之行事曆及檢核紀錄。\n3. 檢核結果為待修繕或汰換者，應再檢視處理情形之紀錄。"}
+    ]}
+  ]},
+  {id:"c3", num:"3", title:"教保活動課程", items:[
+    {code:"3.1", title:"課程規劃與實施", subs:[
+      {code:"3.1.1", desc:"每學期應至少召開一次全園性教保活動課程發展會議。",
+       method:"1. 全園性教保活動課程發展會議須獨立召開，不得併入其他會議辦理。\n2. 查閱評鑑當學年及前一學年之會議紀錄，會議紀錄應包括研議全園性或各班級課程計畫之相關議題。"},
+      {code:"3.1.2", desc:"各班課程應採統整不分科方式進行教學。",
+       method:"1. 抽查評鑑當學年及前一學年之統整教學佐證資料內容。\n2. 由幼兒園提供佐證資料，例如：作息時間表、教學課程表、教學計畫、教學紀錄、親子聯絡簿、教學活動紀錄、日誌或其他。\n3. 前項所列資料足以佐證即可，不宜全數要求。\n4. 實施外語教學者，不得以全部時間，或以部分時間採非融入方式實施。"},
+      {code:"3.1.3", desc:"每日應實施連續三十分鐘以上之幼兒大肌肉活動時間。",
+       method:"1. 抽查評鑑當學年及前一學年之一日作息佐證資料內容。\n2. 由幼兒園提供佐證資料，例如：作息時間表、教學課程表、教學計畫、教學紀錄、親子聯絡簿、教學活動紀錄、日誌或其他。\n3. 前項所列資料足以佐證即可，不宜全數要求。\n4. 安排時間範圍應於上午8時至下午4時之間。"}
+    ]},
+    {code:"3.2", title:"幼兒發展篩檢", subs:[
+      {code:"3.2.1", desc:"每學年應對全園幼兒實施發展篩檢，並對疑似發展遲緩幼兒，留有處理紀錄。",
+       method:"1. 篩檢項目得採用各直轄市、縣(市)主管衛生機關或其他單位所定項目，或由各園自行訂定。\n2. 抽查評鑑當學年及前一學年之發展篩檢紀錄，如兒童發展檢核表等資料。\n3. 查閱發展篩檢結果為疑似遲緩者之處理紀錄，如疑似發展遲緩兒童通報表及回覆表、期中鑑定安置報名表暨同意書、不同意進行鑑定安置者通報主管機關、申請特教支持服務等資料。\n4. 園內具有身心障礙或發展遲緩證明文件之幼兒，免檢核該生此項資料。"}
+    ]},
+    {code:"3.3", title:"活動室環境", subs:[
+      {code:"3.3.1", desc:"室內活動室平均照度至少五百勒克斯（lux）以上，並不得高於七百五十勒克斯（lux）。",
+       method:"1. 實地觀察及量測。\n2. 照度測定方式依據中華民國國家標準CNS 5065（照度測定法）規定：\n(1) 測定高度：以室內活動室桌面之高度為基準。\n(2) 測定方式：室內活動室面積為正四邊形或接近正四邊形者，以9點法檢測室內活動室區域之照度；室內活動室面積為不規則形狀者，擇中央區域以9點法檢測照度。"},
+      {code:"3.3.2", desc:"每名幼兒均有獨立區隔及通風透氣之棉被收納空間或每二週應清洗一次幼兒使用之棉被，並留有紀錄。",
+       method:"本項得擇一評鑑：\n1. 設置棉被收納空間為評鑑細項者，以實地觀察方式為之。\n2. 每二週清洗一次幼兒使用之棉被為評鑑細項者，抽查評鑑當學年及前一學年之相關紀錄，如親子聯絡簿、家長通知單或其他電子通知紀錄等。"}
+    ]},
+    {code:"3.4", title:"午休", subs:[
+      {code:"3.4.1", desc:"全日班應規劃適宜之午睡時間；二歲至未滿三歲幼兒之午睡時間不超過兩小時、三歲至入國民小學前幼兒不超過一小時三十分鐘。",
+       method:"抽查評鑑當學年及前一學年之資料，如作息時間表或教學課程表等。"}
+    ]}
+  ]},
+  {id:"c4", num:"4", title:"人事管理", items:[
+    {code:"4.1", title:"員工保險", subs:[
+      {code:"4.1.1", desc:"教職員工均辦理保險，且投保薪資未有低報情形。",
+       method:"1. 查閱近六個月教職員工之薪資資料。\n2. 查閱近六個月教職員工保險，包括：全民健康保險、勞工保險(含職災)、就業保險或公教人員保險之投保證明文件。\n3. 僱用員工未達五人之幼兒園，勞保免檢核，就業保險仍應檢核。"}
+    ]},
+    {code:"4.2", title:"退休制度", subs:[
+      {code:"4.2.1", desc:"依規定提撥勞工退休準備金或提繳勞工退休金。",
+       method:"1. 查閱近六個月之薪資資料。\n2. 查閱近六個月之提繳勞工退休金證明文件。\n3. 園內有九十四年六月以前任職者，查閱近六個月之提撥勞工退休準備金證明文件，無則免備。"}
+    ]},
+    {code:"4.3", title:"出勤管理", subs:[
+      {code:"4.3.1", desc:"雇主應依相關規定備製及保存勞工出勤紀錄，並依規定核予例假、休息日及休假。",
+       method:"1. 抽查近六個月之出勤紀錄及請假紀錄等相關資料。\n2. 出勤紀錄應逐日記載勞工出勤情形至分鐘為止。"}
+    ]}
+  ]},
+  {id:"c5", num:"5", title:"餐飲與衛生管理", items:[
+    {code:"5.1", title:"餐飲管理", subs:[
+      {code:"5.1.1", desc:"應公布每個月餐點表，並告知家長，且每日餐點均含全穀雜糧類、豆魚蛋肉類、蔬菜類及水果類等四大類食物。",
+       method:"1. 查閱評鑑當學年之公告紀錄，如書面公告、網頁資料等。\n2. 抽查評鑑當學年之通知紀錄，如親子聯絡簿、家長通知單或其他電子通知紀錄等。\n3. 抽查餐點表所列食物內容。\n4. 各類別所含食物內容應依據中央主管機關所定幼兒園餐點食物內容及營養基準，以及中央衛生主管機關所定國人膳食營養素參考攝取量提供衛生、安全及營養均衡之餐食。"},
+      {code:"5.1.2", desc:"點心與正餐之供應時間，規劃至少間隔二小時。", method:"抽查評鑑當學年及前一學年之資料，如作息時間表或教學課程表等。"},
+      {code:"5.1.3", desc:"幼兒使用之餐具不得為塑膠或美耐皿材質。", method:"1. 實地觀察幼兒使用之餐具。\n2. 除幼兒使用外，應含盛裝食品之所有餐具。"},
+      {code:"5.1.4", desc:"廚房之出入口應設置病媒防治設施，且無損壞。", method:"實地觀察病媒防治設施，如自動門、紗門、塑膠簾、空氣簾或其他設備等。"},
+      {code:"5.1.5", desc:"飲用水連續供水固定設備每個月至少維護一次，並留有紀錄。",
+       method:"1. 查閱評鑑當學年及前一學年之飲用水設備水質檢驗及設備維護紀錄表。\n2. 飲用水連續供水固定設備：指公私場所以管線輸送固定水源並能連續處理及連續供水之飲水機，或將其處理後之水以管線輸送至飲水檯供人飲用之裝置。\n3. 飲用水連續供水固定設備抽驗檢測之比例及頻率，依飲用水連續供水固定設備使用及維護管理辦法第8條規定辦理。\n4. 未設置飲用水連續供水固定設備者，此項免檢核。\n5. 本項目得於評鑑前，由直轄市、縣(市)主管機關相關業務單位先行提供查核結果進行審查，評鑑當日免實地檢查。"},
+      {code:"5.1.6", desc:"經飲用水連續供水固定設備處理後之水質，每三個月至少檢測一次大腸桿菌群，水質符合標準並留有紀錄。", method:"同5.1.5檢核方式，查閱相關水質檢驗紀錄。"}
+    ]},
+    {code:"5.2", title:"衛生保健", subs:[
+      {code:"5.2.1", desc:"盥洗室(包括廁所)應保持通風良好，且未有積水之情形。", method:"實地觀察。"},
+      {code:"5.2.2", desc:"廁所應有隔間設計；若無隔間設計者，男、女廁應分別設置。",
+       method:"本項得就下列二項，擇一實地觀察評鑑：\n1. 廁所隔間設計在兼顧幼兒隱私及安全之原則下，其雙側應以軟簾或小隔板，及前側應以門扇或門簾隔間，且不得裝鎖。但供二歲以上未滿三歲幼兒使用者，其前側得不隔間。\n2. 廁所無隔間設計者，則檢核男、女廁分別設置情形。"},
+      {code:"5.2.3", desc:"應建立幼兒託藥措施，並告知家長。",
+       method:"1. 查閱託藥規定。\n2. 抽查評鑑當學年及前一學年之通知紀錄，如親子聯絡簿、家長手冊或其他電子通知紀錄等。"}
+    ]}
+  ]},
+  {id:"c6", num:"6", title:"安全管理", items:[
+    {code:"6.1", title:"交通安全", subs:[
+      {code:"6.1.1", desc:"幼童專用車應依交通管理相關法規所定期限接受定期檢驗，檢驗合格並留有紀錄。",
+       method:"1. 未提供幼童專用車服務者，此項免檢核。\n2. 查閱評鑑當學年及前一學年之檢驗合格紀錄。"},
+      {code:"6.1.2", desc:"幼童專用車至少每半年應實施保養，並留有紀錄。",
+       method:"1. 未提供幼童專用車服務者，此項免檢核。\n2. 查閱評鑑當學年及前一學年之保養紀錄。"},
+      {code:"6.1.3", desc:"幼童專用車之駕駛均應具備職業駕照且年齡為六十五歲以下，並應配有具教保服務人員資格或成年之隨車人員。",
+       method:"1. 未提供幼童專用車服務者，此項免檢核。\n2. 查閱相關資料：\n(1) 駕駛：查閱駕照，且在有效期限內。\n(2) 隨車人員：查閱教保服務人員資格證明文件或身分證明文件。"},
+      {code:"6.1.4", desc:"幼童專用車均應配置對內外行車影像紀錄器及合於規定之滅火器。",
+       method:"1. 未提供幼童專用車服務者，此項免檢核。\n2. 實地觀察每輛幼童專用車滅火器之有效期限及壓力值。\n3. 實地觀察每輛幼童專用車對內、外行車影像紀錄器，及近二個月影像紀錄保存情形。"},
+      {code:"6.1.5", desc:"幼童專用車之駕駛應於每次發車前均確實檢查車況及安全門，並留有紀錄。",
+       method:"1. 未提供幼童專用車服務者，此項免檢核。\n2. 抽查評鑑當學年及前一學年之紀錄。"},
+      {code:"6.1.6", desc:"幼兒上下車時，均應依乘坐幼兒名冊逐一清點，並留有紀錄。",
+       method:"1. 未提供幼童專用車服務者，此項免檢核。\n2. 抽查評鑑當學年及前一學年之乘坐幼兒名冊及每日上下車之核對紀錄。"},
+      {code:"6.1.7", desc:"每半年應至少辦理一次幼童專用車逃生演練，並留有紀錄。",
+       method:"1. 未提供幼童專用車服務者，此項免檢核。\n2. 查閱評鑑當學年及前一學年之行事曆、演練紀錄(包括演練照片)。"}
+    ]},
+    {code:"6.2", title:"場地安全", subs:[
+      {code:"6.2.1", desc:"設置於二樓或三樓露臺（直上方無頂蓋之平臺）之室外活動空間及園內樓梯扶手，其欄杆間距不得大於十公分、不得設置橫條，且幼兒不易穿越或攀爬；露臺欄杆高度不得低於一百一十公分。",
+       method:"1. 未使用二樓或三樓之露臺或園內無設置樓梯者，此項免檢核。\n2. 實地觀察。"},
+      {code:"6.2.2", desc:"固定式遊戲設施應經兒童遊戲場主管機關備查。經備查後，每三年並應委託專業檢驗機構進行檢驗工作。",
+       method:"1. 未設置固定式遊戲設施者，此項免檢核。\n2. 查閱直轄市、縣(市)主管機關備查公文。\n3. 查閱最近一次之合格檢驗報告；檢驗報告須由取得我國簽署國際實驗室認證聯盟（ILAC）相互承認協議（MRA）認證機構核發CNS 17020或ISO／IEC 17020認證證書之檢驗機構所開立。\n4. 前二項所列資料得於評鑑前，由直轄市、縣(市)主管機關相關業務單位先行提供查核結果進行審查，評鑑當日免實地檢查。"}
+    ]},
+    {code:"6.3", title:"緊急事件處理", subs:[
+      {code:"6.3.1", desc:"訂有緊急事件處理機制並留有處理通報紀錄。",
+       method:"1. 查閱緊急事件處理相關規定。\n2. 緊急事件處理機制，應包括以下項目：\n(1) 幼兒緊急傷病施救注意事項。\n(2) 事故傷害防制規定。\n(3) 傳染病通報作業流程。\n(4) 責任通報作業流程(如家暴、性侵害、身心虐待、體罰、霸凌、性騷擾、不當管教，或其他對幼兒之身心暴力或不當對待之行為等)。\n3. 抽查評鑑當學年及前一學年之校安通報網行政通報紀錄及依教保服務機構不適任人員認定通報資訊蒐集查詢處理利用及違法事件通報辦法第9條規定之通報表及知悉通報確認單進行通報紀錄。\n4. 無緊急事件個案者，處理通報紀錄免檢核。"}
+    ]}
+  ]}
+];
+
+// 攤平所有細項，方便統計
+const ALL_SUBS = [];
+CATEGORIES.forEach(cat=>cat.items.forEach(it=>it.subs.forEach(s=>ALL_SUBS.push({...s, catId:cat.id}))));
+
+/* ============================================================
+   2. 執行狀態（可編輯：佐證資料，依 code -> {years:{yearLabel:{files:[],notes:""}}}）
+============================================================ */
+let evidenceData = {};
+try{
+  const raw = document.getElementById('data-store').textContent;
+  evidenceData = JSON.parse(raw) || {};
+}catch(e){ evidenceData = {}; }
+
+let editMode = false;
+let activeCat = "c1"; // "overview" or catId
+let activeYearBySub = {}; // code -> currently selected year label
+
+function saveStore(){
+  document.getElementById('data-store').textContent = JSON.stringify(evidenceData);
+}
+function ensureSub(code){
+  if(!evidenceData[code]) evidenceData[code] = { years:{} };
+  return evidenceData[code];
+}
+function subHasAnyEvidence(code){
+  const d = evidenceData[code];
+  if(!d || !d.years) return false;
+  return Object.values(d.years).some(y => (y.files&&y.files.length) || (y.notes&&y.notes.trim()));
+}
+
+/* ============================================================
+   3. Render
+============================================================ */
+function catProgress(cat){
+  let total=0, done=0;
+  cat.items.forEach(it=>it.subs.forEach(s=>{ total++; if(subHasAnyEvidence(s.code)) done++; }));
+  return {total, done};
+}
+function overallProgress(){
+  let total=ALL_SUBS.length, done=0;
+  ALL_SUBS.forEach(s=>{ if(subHasAnyEvidence(s.code)) done++; });
+  return {total, done};
+}
+
+function renderSidebar(){
+  const nav = document.getElementById('catnav');
+  let html = `<button class="${activeCat==='overview'?'active':''}" onclick="goCat('overview')">
+    <span class="num">◎</span><span>總覽</span></button>`;
+  CATEGORIES.forEach(cat=>{
+    const p = catProgress(cat);
+    html += `<button class="${activeCat===cat.id?'active':''}" onclick="goCat('${cat.id}')">
+      <span class="num">${cat.num}</span><span>${cat.title}</span>
+      <span class="progress-mini">${p.done}/${p.total}</span></button>`;
+  });
+  nav.innerHTML = html;
+}
+
+function goCat(id){
+  activeCat = id;
+  renderSidebar();
+  renderContent();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+window.goCat = goCat;
+
+function renderContent(){
+  const el = document.getElementById('content');
+  const sub = document.getElementById('topbarSub');
+  if(activeCat === 'overview'){
+    sub.textContent = '總覽';
+    el.innerHTML = renderOverview();
+  } else {
+    const cat = CATEGORIES.find(c=>c.id===activeCat);
+    sub.textContent = `${cat.num}. ${cat.title}`;
+    el.innerHTML = renderCategory(cat);
+  }
+  bindDynamicEvents();
+}
+
+function renderOverview(){
+  const op = overallProgress();
+  const pct = op.total? Math.round(op.done/op.total*100):0;
+  let cards = CATEGORIES.map(cat=>{
+    const p = catProgress(cat);
+    const pc = p.total? Math.round(p.done/p.total*100):0;
+    return `<div class="cat-card" onclick="goCat('${cat.id}')">
+      <div class="top"><span class="num">${cat.num}</span></div>
+      <div class="title">${cat.title}</div>
+      <div class="barwrap"><div class="barfill" style="width:${pc}%"></div></div>
+      <div class="frac">${p.done} / ${p.total} 項已建置佐證</div>
+    </div>`;
+  }).join("");
+
+  return `
+  <div class="overview-hero">
+    <h2>112–116學年度幼兒園基礎評鑑</h2>
+    <p>依臺北市政府教育局公告之基礎評鑑指標整理各細項佐證資料，供評鑑委員線上查閱。左側選單依六大類別瀏覽，${editMode?'目前為編輯模式，可新增照片、檔案與文字說明。':'開啟右上角「編輯模式」即可新增或修改資料。'}</p>
+    <div class="overview-stats">
+      <div class="stat"><div class="n">${op.done}/${op.total}</div><div class="l">細項已建置佐證</div></div>
+      <div class="stat"><div class="n">${pct}%</div><div class="l">整體完成度</div></div>
+      <div class="stat"><div class="n">6</div><div class="l">評鑑類別</div></div>
+    </div>
+  </div>
+  <div class="cat-grid">${cards}</div>`;
+}
+
+function renderCategory(cat){
+  const eyebrow = `類別 ${cat.num}`;
+  let itemsHtml = cat.items.map(it=>{
+    const subsHtml = it.subs.map(s=>renderSubitem(s)).join("");
+    return `<div class="item-group">
+      <div class="item-head"><span class="code">${it.code}</span><h3>${it.title}</h3></div>
+      ${subsHtml}
+    </div>`;
+  }).join("");
+  return `<div class="cat-header"><div class="eyebrow">${eyebrow}</div><h2>${cat.title}</h2></div>${itemsHtml}`;
+}
+
+function renderSubitem(s){
+  const done = subHasAnyEvidence(s.code);
+  const data = evidenceData[s.code] || {years:{}};
+  const years = Object.keys(data.years||{});
+  if(!activeYearBySub[s.code] && years.length) activeYearBySub[s.code] = years[0];
+  const curYear = activeYearBySub[s.code];
+
+  let yearChips = years.map(y=>{
+    const hasE = (data.years[y].files&&data.years[y].files.length) || (data.years[y].notes&&data.years[y].notes.trim());
+    return `<button class="year-chip ${curYear===y?'active':''}" onclick="selectYear('${s.code}','${escAttr(y)}')">${y}${hasE?'<span class="dot"></span>':''}</button>`;
+  }).join("");
+
+  let yearAdd = editMode? `<button class="year-add" onclick="addYear('${s.code}')">+ 新增學年度</button>` : "";
+
+  let panelsHtml = "";
+  if(years.length===0){
+    panelsHtml = `<div class="year-empty">${editMode? '尚未新增學年度，請點選「+ 新增學年度」開始建置佐證資料。' : '尚未提供此細項之佐證資料。'}</div>`;
+  } else {
+    panelsHtml = years.map(y=>renderYearPanel(s.code, y, curYear===y)).join("");
+  }
+
+  return `<div class="subitem" id="item-${s.code}">
+    <div class="subitem-head">
+      <div class="seal ${done?'done':''}">${done?'印':''}</div>
+      <div class="subitem-body">
+        <span class="code">${s.code}</span>
+        <div class="desc">${s.desc}</div>
+        <button class="criteria-toggle" onclick="toggleCriteria('${s.code}')">▸ 評鑑方式與檢核資料</button>
+        <div class="criteria-box" id="crit-${s.code}">${s.method}</div>
+      </div>
+    </div>
+    <div class="evidence">
+      <div class="year-row">${yearChips}${yearAdd}</div>
+      ${panelsHtml}
+    </div>
+  </div>`;
+}
+
+function renderYearPanel(code, year, active){
+  const entry = evidenceData[code].years[year] || {files:[], notes:""};
+  const files = entry.files || [];
+
+  let filesHtml = files.map((f,idx)=>{
+    if(f.type && f.type.startsWith('image/')){
+      return `<div class="file-thumb">
+        <img src="${f.dataUrl}" onclick="openLightbox('${f.dataUrl}')" alt="${escAttr(f.name)}">
+        ${editMode? `<button class="rm" onclick="removeFile('${code}','${escAttr(year)}',${idx})">&times;</button>`:''}
+      </div>`;
+    } else {
+      const ext = (f.name.split('.').pop()||'FILE').toUpperCase().slice(0,4);
+      return `<div class="file-thumb">
+        <a class="filecard" href="${f.dataUrl}" download="${escAttr(f.name)}">
+          <span class="ext">${ext}</span><span class="fname">${escHtml(f.name)}</span>
+        </a>
+        ${editMode? `<button class="rm" onclick="removeFile('${code}','${escAttr(year)}',${idx})">&times;</button>`:''}
+      </div>`;
+    }
+  }).join("");
+
+  let uploadHtml = editMode? `<label class="upload-zone">📎 上傳照片 / 檔案
+      <input type="file" multiple onchange="handleUpload(event,'${code}','${escAttr(year)}')">
+    </label>` : "";
+
+  let notesHtml = editMode
+    ? `<div class="notes-label">文字說明</div><textarea class="notes" placeholder="請輸入此學年度之補充說明…" oninput="updateNotes('${code}','${escAttr(year)}',this.value)">${escHtml(entry.notes||"")}</textarea>`
+    : (entry.notes && entry.notes.trim() ? `<div class="notes-label">文字說明</div><div class="notes-view">${escHtml(entry.notes)}</div>` : "");
+
+  let removeYearBtn = editMode? `<div class="yr-actions"><button class="btn btn-danger btn-sm" onclick="removeYear('${code}','${escAttr(year)}')">刪除此學年度資料</button></div>`:"";
+
+  if(!files.length && !uploadHtml && !(entry.notes&&entry.notes.trim())){
+    filesHtml = `<div class="empty-view">尚無資料。</div>`;
+  }
+
+  return `<div class="year-panel ${active?'active':''}" data-code="${code}" data-year="${escAttr(year)}">
+    <div class="files-grid">${filesHtml}</div>
+    ${uploadHtml}
+    ${notesHtml}
+    ${removeYearBtn}
+  </div>`;
+}
+
+/* ============================================================
+   4. Interactions
+============================================================ */
+function bindDynamicEvents(){ /* using inline onclick, nothing to bind globally */ }
+
+function toggleCriteria(code){
+  const box = document.getElementById('crit-'+code);
+  box.classList.toggle('open');
+  const btn = box.previousElementSibling;
+  btn.textContent = (box.classList.contains('open')?'▾':'▸') + ' 評鑑方式與檢核資料';
+}
+window.toggleCriteria = toggleCriteria;
+
+function selectYear(code, year){
+  activeYearBySub[code] = year;
+  rerenderSubitem(code);
+}
+window.selectYear = selectYear;
+
+function addYear(code){
+  const label = prompt("請輸入學年度標籤，例如：113學年度");
+  if(!label) return;
+  const d = ensureSub(code);
+  if(!d.years[label]) d.years[label] = {files:[], notes:""};
+  activeYearBySub[code] = label;
+  saveStore();
+  rerenderSubitem(code);
+  refreshSidebarProgress();
+}
+window.addYear = addYear;
+
+function removeYear(code, year){
+  if(!confirm(`確定要刪除「${year}」的所有佐證資料嗎？此動作無法復原。`)) return;
+  const d = ensureSub(code);
+  delete d.years[year];
+  const remain = Object.keys(d.years);
+  activeYearBySub[code] = remain.length? remain[0] : null;
+  saveStore();
+  rerenderSubitem(code);
+  refreshSidebarProgress();
+}
+window.removeYear = removeYear;
+
+function handleUpload(evt, code, year){
+  const files = Array.from(evt.target.files || []);
+  if(!files.length) return;
+  const d = ensureSub(code);
+  if(!d.years[year]) d.years[year] = {files:[], notes:""};
+  let remaining = files.length;
+  files.forEach(f=>{
+    const reader = new FileReader();
+    reader.onload = function(e){
+      d.years[year].files.push({name:f.name, type:f.type, size:f.size, dataUrl:e.target.result});
+      remaining--;
+      if(remaining===0){
+        saveStore();
+        rerenderSubitem(code);
+        refreshSidebarProgress();
+      }
+    };
+    reader.readAsDataURL(f);
+  });
+  evt.target.value = "";
+}
+window.handleUpload = handleUpload;
+
+function removeFile(code, year, idx){
+  const d = ensureSub(code);
+  if(d.years[year]){
+    d.years[year].files.splice(idx,1);
+    saveStore();
+    rerenderSubitem(code);
+    refreshSidebarProgress();
+  }
+}
+window.removeFile = removeFile;
+
+function updateNotes(code, year, val){
+  const d = ensureSub(code);
+  if(!d.years[year]) d.years[year] = {files:[], notes:""};
+  d.years[year].notes = val;
+  saveStore();
+  refreshSidebarProgress();
+  // Only update the seal + chip dot, avoid re-render that would lose textarea focus
+  updateSealAndChip(code, year);
+}
+window.updateNotes = updateNotes;
+
+function updateSealAndChip(code, year){
+  const item = document.getElementById('item-'+code);
+  if(!item) return;
+  const seal = item.querySelector('.seal');
+  const done = subHasAnyEvidence(code);
+  seal.classList.toggle('done', done);
+  seal.textContent = done? '印' : '';
+}
+
+function rerenderSubitem(code){
+  // find which category contains this code, and re-render whole category view to keep DOM simple
+  renderContent();
+}
+
+function refreshSidebarProgress(){
+  renderSidebar();
+}
+
+function openLightbox(src){
+  document.getElementById('lbImg').src = src;
+  document.getElementById('lightbox').classList.add('open');
+}
+window.openLightbox = openLightbox;
+document.getElementById('lbClose').onclick = ()=>document.getElementById('lightbox').classList.remove('open');
+document.getElementById('lightbox').onclick = (e)=>{ if(e.target.id==='lightbox') e.currentTarget.classList.remove('open'); };
+
+/* Edit mode toggle */
+const editToggleEl = document.getElementById('editToggle');
+editToggleEl.onclick = ()=>{
+  editMode = !editMode;
+  editToggleEl.classList.toggle('on', editMode);
+  renderContent();
+};
+
+/* Export */
+document.getElementById('exportBtn').onclick = ()=>{
+  saveStore();
+  const html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+  const blob = new Blob([html], {type:'text/html'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const d = new Date();
+  const stamp = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+  a.href = url;
+  a.download = `幼兒園基礎評鑑佐證資料_${stamp}.html`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url), 2000);
+};
+
+/* Helpers */
+function escHtml(str){
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function escAttr(str){
+  return String(str).replace(/'/g,"\\'").replace(/"/g,'&quot;');
+}
+
+/* ============================================================
+   5. Init
+============================================================ */
+renderSidebar();
+renderContent();
+</script>
+</body>
+</html>
