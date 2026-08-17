@@ -297,16 +297,35 @@
 
   .empty-view{font-size:12.5px; color:var(--ink-soft); font-style:italic;}
 
-  /* Lightbox */
+  /* Lightbox / Preview modal */
   #lightbox{
-    position:fixed; inset:0; background:rgba(20,26,30,.9); display:none;
+    position:fixed; inset:0; background:rgba(20,26,30,.92); display:none;
     align-items:center; justify-content:center; z-index:100; padding:30px;
   }
   #lightbox.open{display:flex;}
   #lightbox img{max-width:92vw; max-height:88vh; border-radius:6px; box-shadow:0 10px 40px rgba(0,0,0,.5);}
+  #lightbox iframe{
+    width:min(94vw,980px); height:88vh; border:none; border-radius:8px; background:#fff;
+    box-shadow:0 10px 40px rgba(0,0,0,.5);
+  }
+  #lightbox .previewTitle{
+    position:absolute; top:20px; left:26px; color:#EAF1EE; font-size:13px; font-weight:700;
+    max-width:70vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  #lightbox .dl{
+    position:absolute; top:18px; right:64px; color:#EAF1EE; background:rgba(255,255,255,.12);
+    border:1px solid rgba(255,255,255,.3); border-radius:999px; padding:6px 14px; font-size:12px;
+    font-weight:700; text-decoration:none; cursor:pointer;
+  }
+  #lightbox .dl:hover{background:rgba(255,255,255,.22);}
   #lightbox .close{
     position:absolute; top:20px; right:26px; background:none; border:none; color:#fff;
     font-size:30px; cursor:pointer; line-height:1;
+  }
+  .file-thumb .filecard.previewable{cursor:zoom-in;}
+  .file-thumb .nopreview-badge{
+    position:absolute; bottom:3px; left:3px; font-size:8px; font-family:'IBM Plex Mono',monospace;
+    background:rgba(30,42,51,.6); color:#fff; padding:1px 4px; border-radius:3px;
   }
 
   footer.sitefoot{
@@ -357,7 +376,13 @@
   </div>
 </div>
 
-<div id="lightbox"><button class="close" id="lbClose">&times;</button><img id="lbImg" src="" alt=""></div>
+<div id="lightbox">
+  <span class="previewTitle" id="lbTitle"></span>
+  <a class="dl" id="lbDownload" download>⬇ 下載原始檔</a>
+  <button class="close" id="lbClose">&times;</button>
+  <img id="lbImg" src="" alt="" style="display:none;">
+  <iframe id="lbFrame" src="" style="display:none;"></iframe>
+</div>
 
 <script>
 /* ============================================================
@@ -641,9 +666,19 @@ function renderYearPanel(code, year, active){
   const files = entry.files || [];
 
   let filesHtml = files.map((f,idx)=>{
-    if(f.type && f.type.startsWith('image/')){
+    const isImg = f.type && f.type.startsWith('image/');
+    const isPdf = f.type === 'application/pdf' || /\.pdf$/i.test(f.name||'');
+    if(isImg){
       return `<div class="file-thumb">
-        <img src="${f.dataUrl}" onclick="openLightbox('${f.dataUrl}')" alt="${escAttr(f.name)}">
+        <img src="${f.dataUrl}" onclick="openLightbox('img','${f.dataUrl}','${escAttr(f.name)}')" alt="${escAttr(f.name)}">
+        ${editMode? `<button class="rm" onclick="removeFile('${code}','${escAttr(year)}',${idx})">&times;</button>`:''}
+      </div>`;
+    } else if(isPdf){
+      const ext = 'PDF';
+      return `<div class="file-thumb">
+        <div class="filecard previewable" onclick="openLightbox('pdf','${f.dataUrl}','${escAttr(f.name)}')">
+          <span class="ext">${ext}</span><span class="fname">${escHtml(f.name)}</span>
+        </div>
         ${editMode? `<button class="rm" onclick="removeFile('${code}','${escAttr(year)}',${idx})">&times;</button>`:''}
       </div>`;
     } else {
@@ -652,6 +687,7 @@ function renderYearPanel(code, year, active){
         <a class="filecard" href="${f.dataUrl}" download="${escAttr(f.name)}">
           <span class="ext">${ext}</span><span class="fname">${escHtml(f.name)}</span>
         </a>
+        <span class="nopreview-badge">下載</span>
         ${editMode? `<button class="rm" onclick="removeFile('${code}','${escAttr(year)}',${idx})">&times;</button>`:''}
       </div>`;
     }
@@ -785,13 +821,37 @@ function refreshSidebarProgress(){
   renderSidebar();
 }
 
-function openLightbox(src){
-  document.getElementById('lbImg').src = src;
+function openLightbox(kind, src, name){
+  const img = document.getElementById('lbImg');
+  const frame = document.getElementById('lbFrame');
+  const title = document.getElementById('lbTitle');
+  const dl = document.getElementById('lbDownload');
+  img.style.display = 'none';
+  frame.style.display = 'none';
+  frame.src = '';
+  if(kind === 'img'){
+    img.src = src;
+    img.style.display = 'block';
+  } else if(kind === 'pdf'){
+    frame.src = src;
+    frame.style.display = 'block';
+  }
+  title.textContent = name || '';
+  dl.href = src;
+  dl.setAttribute('download', name || 'file');
   document.getElementById('lightbox').classList.add('open');
 }
 window.openLightbox = openLightbox;
-document.getElementById('lbClose').onclick = ()=>document.getElementById('lightbox').classList.remove('open');
-document.getElementById('lightbox').onclick = (e)=>{ if(e.target.id==='lightbox') e.currentTarget.classList.remove('open'); };
+document.getElementById('lbClose').onclick = ()=>{
+  document.getElementById('lightbox').classList.remove('open');
+  document.getElementById('lbFrame').src = '';
+};
+document.getElementById('lightbox').onclick = (e)=>{
+  if(e.target.id==='lightbox'){
+    e.currentTarget.classList.remove('open');
+    document.getElementById('lbFrame').src = '';
+  }
+};
 
 /* Edit mode toggle */
 const editToggleEl = document.getElementById('editToggle');
