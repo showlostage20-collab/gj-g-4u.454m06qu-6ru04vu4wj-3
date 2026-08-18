@@ -91,6 +91,12 @@
     margin-top:18px; padding-top:14px; border-top:1px solid rgba(234,241,238,.16);
     font-size:11px; color:#93A9A3; line-height:1.7;
   }
+  .manage-periods-btn{
+    all:unset; cursor:pointer; display:block; margin-top:10px;
+    font-size:11px; font-weight:700; color:var(--gold-light);
+    border:1px solid rgba(234,241,238,.25); border-radius:6px; padding:6px 8px; text-align:center;
+  }
+  .manage-periods-btn:hover{background:rgba(234,241,238,.1);}
 
   /* Main column */
   #main{flex:1; min-width:0; display:flex; flex-direction:column;}
@@ -332,6 +338,43 @@
     text-align:center; font-size:11.5px; color:var(--ink-soft); padding:26px 20px 40px;
   }
 
+  /* Modal (period manager / assigner) */
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(20,26,30,.55); display:none;
+    align-items:center; justify-content:center; z-index:110; padding:20px;
+  }
+  .modal-overlay.open{display:flex;}
+  .modal-box{
+    background:var(--paper); border-radius:14px; width:min(420px,100%); max-height:80vh;
+    display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,.3); overflow:hidden;
+  }
+  .modal-head{
+    display:flex; align-items:center; justify-content:space-between; padding:16px 18px;
+    border-bottom:1px solid var(--line); background:var(--card);
+  }
+  .modal-head h3{margin:0; font-family:'Noto Serif TC',serif; font-size:15.5px; color:var(--navy);}
+  .modal-close{all:unset; cursor:pointer; font-size:22px; color:var(--ink-soft); line-height:1; padding:2px 4px;}
+  .modal-close:hover{color:var(--alert);}
+  .modal-body{padding:16px 18px 18px; overflow-y:auto;}
+  .modal-hint{font-size:12px; color:var(--ink-soft); line-height:1.7; margin:0 0 12px;}
+  .period-list{display:flex; flex-direction:column; gap:6px; margin-bottom:14px; max-height:280px; overflow-y:auto;}
+  .period-row{display:flex; align-items:center; gap:8px;}
+  .period-pick{
+    all:unset; flex:1; cursor:pointer; font-size:13px; font-weight:600; color:var(--ink);
+    background:var(--card); border:1px solid var(--line); border-radius:8px; padding:9px 12px;
+  }
+  .period-pick:hover{border-color:var(--navy-light); background:var(--paper-2);}
+  .period-del{
+    all:unset; cursor:pointer; width:26px; height:26px; flex:none; border-radius:50%;
+    display:flex; align-items:center; justify-content:center; color:var(--ink-soft); font-size:14px;
+  }
+  .period-del:hover{background:var(--alert-light); color:var(--alert);}
+  .period-add-row{display:flex; gap:8px;}
+  .period-add-row input{
+    flex:1; border:1px solid var(--line); border-radius:8px; padding:9px 11px; font-size:13px;
+    font-family:inherit; background:var(--card); color:var(--ink);
+  }
+
   @media (max-width:860px){
     #sidebar{
       position:fixed; left:0; right:0; top:0; height:auto; width:100%; z-index:30;
@@ -358,7 +401,9 @@
       <small>112–116 學年度指標</small>
     </div>
     <nav class="catnav" id="catnav"></nav>
-    <div class="sidebar-foot">依臺北市政府教育局<br>112年4月28日修正指標建置</div>
+    <div class="sidebar-foot">依臺北市政府教育局<br>112年4月28日修正指標建置
+      <button class="manage-periods-btn" onclick="openPeriodManager()">⚙ 管理學年度／期別標籤</button>
+    </div>
   </aside>
 
   <div id="main">
@@ -382,6 +427,16 @@
   <button class="close" id="lbClose">&times;</button>
   <img id="lbImg" src="" alt="" style="display:none;">
   <iframe id="lbFrame" src="" style="display:none;"></iframe>
+</div>
+
+<div id="periodModal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 id="periodModalTitle">學年度／期別</h3>
+      <button class="modal-close" onclick="closePeriodModal()">&times;</button>
+    </div>
+    <div class="modal-body" id="periodModalBody"></div>
+  </div>
 </div>
 
 <script>
@@ -513,17 +568,26 @@ CATEGORIES.forEach(cat=>cat.items.forEach(it=>it.subs.forEach(s=>ALL_SUBS.push({
    2. 執行狀態（可編輯：佐證資料，依 code -> {years:{yearLabel:{files:[],notes:""}}}）
 ============================================================ */
 let evidenceData = {};
+let periodList = [];
 try{
   const raw = document.getElementById('data-store').textContent;
-  evidenceData = JSON.parse(raw) || {};
-}catch(e){ evidenceData = {}; }
+  const parsed = JSON.parse(raw) || {};
+  if(parsed && (parsed.evidence || parsed.periods)){
+    evidenceData = parsed.evidence || {};
+    periodList = parsed.periods || [];
+  } else {
+    evidenceData = parsed || {}; // 舊格式相容（匯出檔案為早期版本時）
+    periodList = [];
+  }
+}catch(e){ evidenceData = {}; periodList = []; }
 
 let editMode = false;
 let activeCat = "c1"; // "overview" or catId
 let activeYearBySub = {}; // code -> currently selected year label
+let periodModalTargetCode = null; // 非 null 時代表「套用到此細項」模式
 
 function saveStore(){
-  document.getElementById('data-store').textContent = JSON.stringify(evidenceData);
+  document.getElementById('data-store').textContent = JSON.stringify({evidence:evidenceData, periods:periodList});
 }
 function ensureSub(code){
   if(!evidenceData[code]) evidenceData[code] = { years:{} };
@@ -623,26 +687,26 @@ function renderCategory(cat){
   return `<div class="cat-header"><div class="eyebrow">${eyebrow}</div><h2>${cat.title}</h2></div>${itemsHtml}`;
 }
 
+const GENERAL_YEAR = "不分學年度";
+
 function renderSubitem(s){
   const done = subHasAnyEvidence(s.code);
   const data = evidenceData[s.code] || {years:{}};
-  const years = Object.keys(data.years||{});
-  if(!activeYearBySub[s.code] && years.length) activeYearBySub[s.code] = years[0];
+  const customYears = Object.keys(data.years||{}).filter(y=>y!==GENERAL_YEAR);
+  const years = [GENERAL_YEAR, ...customYears]; // 一般（不分學年度）永遠顯示在第一個
+  if(!activeYearBySub[s.code]) activeYearBySub[s.code] = GENERAL_YEAR;
   const curYear = activeYearBySub[s.code];
 
   let yearChips = years.map(y=>{
-    const hasE = (data.years[y].files&&data.years[y].files.length) || (data.years[y].notes&&data.years[y].notes.trim());
-    return `<button class="year-chip ${curYear===y?'active':''}" onclick="selectYear('${s.code}','${escAttr(y)}')">${y}${hasE?'<span class="dot"></span>':''}</button>`;
+    const yd = (data.years||{})[y];
+    const hasE = yd && ((yd.files&&yd.files.length) || (yd.notes&&yd.notes.trim()));
+    const label = y===GENERAL_YEAR? '不分學年度' : y;
+    return `<button class="year-chip ${curYear===y?'active':''}" onclick="selectYear('${s.code}','${escAttr(y)}')">${label}${hasE?'<span class="dot"></span>':''}</button>`;
   }).join("");
 
-  let yearAdd = editMode? `<button class="year-add" onclick="addYear('${s.code}')">+ 新增學年度</button>` : "";
+  let yearAdd = editMode? `<button class="year-add" onclick="addYear('${s.code}')">+ 需要分學年度時新增</button>` : "";
 
-  let panelsHtml = "";
-  if(years.length===0){
-    panelsHtml = `<div class="year-empty">${editMode? '尚未新增學年度，請點選「+ 新增學年度」開始建置佐證資料。' : '尚未提供此細項之佐證資料。'}</div>`;
-  } else {
-    panelsHtml = years.map(y=>renderYearPanel(s.code, y, curYear===y)).join("");
-  }
+  let panelsHtml = years.map(y=>renderYearPanel(s.code, y, curYear===y)).join("");
 
   return `<div class="subitem" id="item-${s.code}">
     <div class="subitem-head">
@@ -662,7 +726,7 @@ function renderSubitem(s){
 }
 
 function renderYearPanel(code, year, active){
-  const entry = evidenceData[code].years[year] || {files:[], notes:""};
+  const entry = (evidenceData[code] && evidenceData[code].years && evidenceData[code].years[year]) || {files:[], notes:""};
   const files = entry.files || [];
 
   let filesHtml = files.map((f,idx)=>{
@@ -698,13 +762,16 @@ function renderYearPanel(code, year, active){
     </label>` : "";
 
   let notesHtml = editMode
-    ? `<div class="notes-label">文字說明</div><textarea class="notes" placeholder="請輸入此學年度之補充說明…" oninput="updateNotes('${code}','${escAttr(year)}',this.value)">${escHtml(entry.notes||"")}</textarea>`
+    ? `<div class="notes-label">文字說明</div><textarea class="notes" placeholder="請輸入補充說明…" oninput="updateNotes('${code}','${escAttr(year)}',this.value)">${escHtml(entry.notes||"")}</textarea>`
     : (entry.notes && entry.notes.trim() ? `<div class="notes-label">文字說明</div><div class="notes-view">${escHtml(entry.notes)}</div>` : "");
 
-  let removeYearBtn = editMode? `<div class="yr-actions"><button class="btn btn-danger btn-sm" onclick="removeYear('${code}','${escAttr(year)}')">刪除此學年度資料</button></div>`:"";
+  const isGeneral = year === GENERAL_YEAR;
+  let removeYearBtn = editMode && (files.length || (entry.notes&&entry.notes.trim()))
+    ? `<div class="yr-actions"><button class="btn btn-danger btn-sm" onclick="removeYear('${code}','${escAttr(year)}')">${isGeneral? '清除此區所有資料' : '刪除此學年度資料'}</button></div>`
+    : "";
 
   if(!files.length && !uploadHtml && !(entry.notes&&entry.notes.trim())){
-    filesHtml = `<div class="empty-view">尚無資料。</div>`;
+    filesHtml = `<div class="empty-view">${isGeneral? '尚無資料，開啟編輯模式即可直接上傳照片或檔案。' : '尚無資料。'}</div>`;
   }
 
   return `<div class="year-panel ${active?'active':''}" data-code="${code}" data-year="${escAttr(year)}">
@@ -735,23 +802,93 @@ function selectYear(code, year){
 window.selectYear = selectYear;
 
 function addYear(code){
-  const label = prompt("請輸入學年度標籤，例如：113學年度");
-  if(!label) return;
+  periodModalTargetCode = code;
+  document.getElementById('periodModalTitle').textContent = '為此細項選擇期別';
+  renderPeriodModalBody();
+  document.getElementById('periodModal').classList.add('open');
+}
+window.addYear = addYear;
+
+function openPeriodManager(){
+  periodModalTargetCode = null;
+  document.getElementById('periodModalTitle').textContent = '管理學年度／期別標籤';
+  renderPeriodModalBody();
+  document.getElementById('periodModal').classList.add('open');
+}
+window.openPeriodManager = openPeriodManager;
+
+function closePeriodModal(){
+  document.getElementById('periodModal').classList.remove('open');
+  periodModalTargetCode = null;
+}
+window.closePeriodModal = closePeriodModal;
+
+function renderPeriodModalBody(){
+  const body = document.getElementById('periodModalBody');
+  const isAssignMode = !!periodModalTargetCode;
+  const listHtml = periodList.length
+    ? periodList.map(p=>`<div class="period-row">
+        <button class="period-pick" onclick="${isAssignMode? `pickPeriod('${escAttr(p)}')` : 'void(0)'}">${escHtml(p)}</button>
+        <button class="period-del" title="移除此標籤（不會刪除已上傳的資料）" onclick="deletePeriodLabel('${escAttr(p)}')">&times;</button>
+      </div>`).join("")
+    : `<div class="empty-view">尚未建立任何學年度／期別標籤，請在下方新增。</div>`;
+
+  body.innerHTML = `
+    <p class="modal-hint">${isAssignMode
+      ? '點選一個期別套用到此細項；或直接輸入新的期別名稱（例如：113學年度上學期、114學年度下學期）。標籤完全自訂，不限於112–116年。'
+      : '在此新增或移除全站共用的學年度／期別標籤，供各細項選用。移除標籤不會刪除已上傳的照片或檔案。'}</p>
+    <div class="period-list">${listHtml}</div>
+    <div class="period-add-row">
+      <input type="text" id="periodNewInput" placeholder="輸入新的期別名稱，例如：113學年度上學期" onkeydown="if(event.key==='Enter')createPeriodLabel()">
+      <button class="btn btn-navy btn-sm" onclick="createPeriodLabel()">新增</button>
+    </div>`;
+  const inputEl = document.getElementById('periodNewInput');
+  if(inputEl) inputEl.focus();
+}
+
+function createPeriodLabel(){
+  const input = document.getElementById('periodNewInput');
+  const val = (input.value||'').trim();
+  if(!val) return;
+  if(val === GENERAL_YEAR){ input.value=''; return; }
+  if(!periodList.includes(val)) periodList.push(val);
+  saveStore();
+  if(periodModalTargetCode){
+    pickPeriod(val);
+  } else {
+    renderPeriodModalBody();
+  }
+}
+window.createPeriodLabel = createPeriodLabel;
+
+function deletePeriodLabel(label){
+  periodList = periodList.filter(p=>p!==label);
+  saveStore();
+  renderPeriodModalBody();
+}
+window.deletePeriodLabel = deletePeriodLabel;
+
+function pickPeriod(label){
+  const code = periodModalTargetCode;
+  if(!code) return;
   const d = ensureSub(code);
   if(!d.years[label]) d.years[label] = {files:[], notes:""};
   activeYearBySub[code] = label;
   saveStore();
+  closePeriodModal();
   rerenderSubitem(code);
   refreshSidebarProgress();
 }
-window.addYear = addYear;
+window.pickPeriod = pickPeriod;
 
 function removeYear(code, year){
-  if(!confirm(`確定要刪除「${year}」的所有佐證資料嗎？此動作無法復原。`)) return;
+  const msg = year===GENERAL_YEAR
+    ? `確定要清除此細項「不分學年度」區塊的所有照片、檔案與說明嗎？此動作無法復原。`
+    : `確定要刪除「${year}」的所有佐證資料嗎？此動作無法復原。`;
+  if(!confirm(msg)) return;
   const d = ensureSub(code);
   delete d.years[year];
-  const remain = Object.keys(d.years);
-  activeYearBySub[code] = remain.length? remain[0] : null;
+  activeYearBySub[code] = GENERAL_YEAR;
   saveStore();
   rerenderSubitem(code);
   refreshSidebarProgress();
@@ -851,6 +988,9 @@ document.getElementById('lightbox').onclick = (e)=>{
     e.currentTarget.classList.remove('open');
     document.getElementById('lbFrame').src = '';
   }
+};
+document.getElementById('periodModal').onclick = (e)=>{
+  if(e.target.id==='periodModal') closePeriodModal();
 };
 
 /* Edit mode toggle */
