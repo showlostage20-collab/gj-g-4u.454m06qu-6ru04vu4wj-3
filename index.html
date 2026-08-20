@@ -117,6 +117,13 @@
   }
   .toolbar{display:flex; align-items:center; gap:10px;}
 
+  .save-indicator{
+    font-size:11px; color:var(--ink-soft); font-family:'IBM Plex Mono',monospace;
+    white-space:nowrap; transition:opacity .3s ease;
+  }
+  .save-indicator.flash{color:var(--sage); font-weight:600;}
+  .save-indicator.warn{color:var(--alert); font-weight:700;}
+
   .toggle{
     display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none;
     font-size:12.5px; font-weight:700; color:var(--navy);
@@ -403,6 +410,7 @@
     <nav class="catnav" id="catnav"></nav>
     <div class="sidebar-foot">依臺北市政府教育局<br>112年4月28日修正指標建置
       <button class="manage-periods-btn" onclick="openPeriodManager()">⚙ 管理學年度／期別標籤</button>
+      <button class="manage-periods-btn" onclick="clearLocalDraft()">🗑 清除本機自動儲存草稿</button>
     </div>
   </aside>
 
@@ -412,6 +420,7 @@
         <span class="subtitle" id="topbarSub">總覽</span>
       </h1>
       <div class="toolbar">
+        <span id="saveIndicator" class="save-indicator"></span>
         <div class="toggle" id="editToggle"><span class="switch"></span>編輯模式</div>
         <button class="btn btn-gold" id="exportBtn">⬇ 匯出網站檔案</button>
       </div>
@@ -569,26 +578,78 @@ CATEGORIES.forEach(cat=>cat.items.forEach(it=>it.subs.forEach(s=>ALL_SUBS.push({
 ============================================================ */
 let evidenceData = {};
 let periodList = [];
-try{
-  const raw = document.getElementById('data-store').textContent;
-  const parsed = JSON.parse(raw) || {};
-  if(parsed && (parsed.evidence || parsed.periods)){
-    evidenceData = parsed.evidence || {};
-    periodList = parsed.periods || [];
-  } else {
-    evidenceData = parsed || {}; // 舊格式相容（匯出檔案為早期版本時）
-    periodList = [];
-  }
-}catch(e){ evidenceData = {}; periodList = []; }
+const STORAGE_KEY = 'kinderEvalDraft_v1';
+
+function loadFromLocalStorage(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return null;
+    return JSON.parse(raw);
+  }catch(e){ return null; }
+}
+
+const localDraft = loadFromLocalStorage();
+if(localDraft && (localDraft.evidence || localDraft.periods)){
+  // 瀏覽器已有較新的本機草稿，優先使用（避免重新整理後遺失剛才的編輯）
+  evidenceData = localDraft.evidence || {};
+  periodList = localDraft.periods || [];
+}else{
+  try{
+    const raw = document.getElementById('data-store').textContent;
+    const parsed = JSON.parse(raw) || {};
+    if(parsed && (parsed.evidence || parsed.periods)){
+      evidenceData = parsed.evidence || {};
+      periodList = parsed.periods || [];
+    } else {
+      evidenceData = parsed || {}; // 舊格式相容（匯出檔案為早期版本時）
+      periodList = [];
+    }
+  }catch(e){ evidenceData = {}; periodList = []; }
+}
 
 let editMode = false;
 let activeCat = "c1"; // "overview" or catId
 let activeYearBySub = {}; // code -> currently selected year label
 let periodModalTargetCode = null; // 非 null 時代表「套用到此細項」模式
+let localStorageOK = true;
 
 function saveStore(){
-  document.getElementById('data-store').textContent = JSON.stringify({evidence:evidenceData, periods:periodList});
+  const payload = {evidence:evidenceData, periods:periodList};
+  const json = JSON.stringify(payload);
+  document.getElementById('data-store').textContent = json;
+  try{
+    localStorage.setItem(STORAGE_KEY, json);
+    localStorageOK = true;
+  }catch(e){
+    localStorageOK = false;
+  }
+  showSaveIndicator();
 }
+
+function showSaveIndicator(){
+  const el = document.getElementById('saveIndicator');
+  if(!el) return;
+  if(!localStorageOK){
+    el.textContent = '⚠ 此瀏覽器環境無法自動儲存，請記得手動匯出';
+    el.classList.add('warn');
+    return;
+  }
+  el.classList.remove('warn');
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2,'0');
+  const mm = String(now.getMinutes()).padStart(2,'0');
+  const ss = String(now.getSeconds()).padStart(2,'0');
+  el.textContent = `已自動儲存於此瀏覽器 ${hh}:${mm}:${ss}`;
+  el.classList.add('flash');
+  setTimeout(()=>el.classList.remove('flash'), 700);
+}
+function clearLocalDraft(){
+  if(!confirm('確定要清除此瀏覽器自動儲存的草稿嗎？此動作不會影響頁面上目前顯示的內容，但清除後若重新整理頁面，將改為讀取此檔案原本內建的資料（也就是上一次匯出時的內容）。')) return;
+  try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+  alert('本機草稿已清除。');
+}
+window.clearLocalDraft = clearLocalDraft;
+
 function ensureSub(code){
   if(!evidenceData[code]) evidenceData[code] = { years:{} };
   return evidenceData[code];
@@ -1031,6 +1092,21 @@ function escAttr(str){
 ============================================================ */
 renderSidebar();
 renderContent();
+// 測試 localStorage 是否可用，並顯示目前狀態
+(function initSaveIndicator(){
+  try{
+    localStorage.setItem('__test__','1');
+    localStorage.removeItem('__test__');
+    localStorageOK = true;
+    const el = document.getElementById('saveIndicator');
+    if(el) el.textContent = localDraft ? '已還原此瀏覽器的自動儲存草稿' : '編輯內容將自動儲存於此瀏覽器';
+  }catch(e){
+    localStorageOK = false;
+    const el = document.getElementById('saveIndicator');
+    if(el){ el.textContent = '⚠ 此瀏覽器環境無法自動儲存，請記得手動匯出'; el.classList.add('warn'); }
+  }
+})();
 </script>
+
 </body>
 </html>
